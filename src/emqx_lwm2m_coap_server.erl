@@ -27,12 +27,19 @@
 
 
 start() ->
-    Port = application:get_env(?APP, port, 5783),
+    Port = application:get_env(?APP, port, 5683),
     start(Port).
 
 start(Port) ->
-    lwm2m_coap_server:start(),
-    lwm2m_coap_server:start_udp(lwm2m_udp_socket, Port),
+    {ok, _} = application:ensure_all_started(lwm2m_coap),
+
+    ResourceHandlers = [
+        {[<<"rd">>], emqx_lwm2m_coap_resource, undefined}
+    ],
+    lwm2m_coap_server:start_registry(ResourceHandlers),
+
+    Opts = application:get_env(?APP, options, []),
+    lwm2m_coap_server:start_udp(lwm2m_udp_socket, Port, Opts),
 
     CertFile = application:get_env(?APP, certfile, ""),
     KeyFile = application:get_env(?APP, keyfile, ""),
@@ -41,20 +48,10 @@ start(Port) ->
             lwm2m_coap_server:start_dtls(lwm2m_dtls_socket, Port+1, [{certfile, CertFile}, {keyfile, KeyFile}]);
         false ->
             ?LOG(error, "certfile ~p or keyfile ~p are not valid, turn off coap DTLS", [CertFile, KeyFile])
-    end,
-
-    lwm2m_coap_server_registry:add_handler([<<"rd">>], emqx_lwm2m_coap_resource, undefined).
-
+    end.
 
 stop() ->
     lwm2m_coap_server:stop_udp(lwm2m_udp_socket),
     lwm2m_coap_server:stop_dtls(lwm2m_dtls_socket),
     lwm2m_coap_server:stop(undefined).
-
-
-
-
 % end of file
-
-
-

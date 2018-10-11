@@ -25,7 +25,7 @@
 
 
 start(_Type, _Args) ->
-    Port = application:get_env(?APP, port, 5783),
+    Port = application:get_env(?APP, port, 5683),
     Pid = emqx_lwm2m_sup:start_link(),
     emqx_lwm2m_coap_server:start(Port),
     emqx_lwm2m_cfg:register(),
@@ -33,12 +33,8 @@ start(_Type, _Args) ->
 
 prep_stop(State) ->
     emqx_lwm2m_coap_server:stop(),
-    emqx_lwm2m_config:unregister(),
+    emqx_lwm2m_cfg:unregister(),
     State.
 
 stop(_State) ->
     ok.
-
-
-
-
